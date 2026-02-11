@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+
+{% block title %}TikTok Downloader{% endblock %}
+
+{% block content %}
+<h1>Download TikTok Content</h1>
+
+<form id="download-form" class="download-form">
+  <input id="url" type="url" placeholder="https://www.tiktok.com/@username" required />
+  <button type="submit" id="download-btn">Download</button>
+</form>
+
+<div id="status" class="status hidden"></div>
+
+<div id="progress-container" class="progress-container hidden">
+  <div class="progress-bar">
+    <div id="progress-fill" class="progress-fill"></div>
+  </div>
+  <span id="progress-text" class="progress-text">0 / 0</span>
+</div>
+
+<pre id="log"></pre>
+{% endblock %}
+
+{% block scripts %}
+<script src="/static/app.js"></script>
+{% endblock %}

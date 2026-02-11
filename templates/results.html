@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+
+{% block title %}Browse Downloads{% endblock %}
+
+{% block content %}
+<h1>Downloaded Content</h1>
+
+{% if not profiles %}
+  <p class="empty-state">No downloads yet. <a href="/">Start downloading</a>.</p>
+{% endif %}
+
+{% for profile in profiles %}
+<div class="profile-card">
+  <h2 class="profile-name">@{{ profile.name }}</h2>
+  <p class="video-count">{{ profile.videos | length }} video(s)</p>
+
+  <div class="video-grid">
+    {% for video in profile.videos %}
+    <div class="video-card">
+      <div class="video-id">{{ video.id }}</div>
+      <ul class="file-list">
+        {% for file in video.files %}
+        <li>
+          <a href="/downloads/{{ file.path }}" class="file-link" download>
+            {{ file.name }}
+          </a>
+          <span class="file-size">{{ "%.1f" | format(file.size / 1024 / 1024) }} MB</span>
+        </li>
+        {% endfor %}
+      </ul>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endfor %}
+{% endblock %}

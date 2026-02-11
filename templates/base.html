@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}TikTok Downloader{% endblock %}</title>
+  <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+  <nav class="navbar">
+    <div class="nav-brand">TikTok Downloader</div>
+    <div class="nav-links">
+      <a href="/" class="nav-link{% if request.path == '/' %} active{% endif %}">Download</a>
+      <a href="/downloads" class="nav-link{% if request.path == '/downloads' %} active{% endif %}">Browse</a>
+    </div>
+  </nav>
+
+  <main class="container">
+    {% block content %}{% endblock %}
+  </main>
+
+  {% block scripts %}{% endblock %}
+</body>
+</html>

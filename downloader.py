@@ -32,28 +32,27 @@ def enumerate_profile_videos(url: str) -> list[dict]:
     return [e for e in entries if e is not None]
 
 
-def download_video(info_dict: dict, output_dir: str) -> str:
-    """Download a single video to output_dir/video.mp4. Returns the file path."""
+def download_video(info_dict: dict, output_dir: str, video_id: str) -> str:
+    """Download a single video to output_dir/{video_id}.mp4. Returns the file path."""
     video_url = info_dict.get("webpage_url") or info_dict.get("url")
-    output_path = os.path.join(output_dir, "video.mp4")
+    output_path = os.path.join(output_dir, f"{video_id}.mp4")
 
     ydl_opts = {
         "quiet": True,
         "no_warnings": True,
-        "outtmpl": os.path.join(output_dir, "video.%(ext)s"),
+        "outtmpl": os.path.join(output_dir, f"{video_id}.%(ext)s"),
         "format": "best[ext=mp4]/best",
         "merge_output_format": "mp4",
     }
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
         ydl.download([video_url])
 
-    # yt-dlp may produce video.mp4 or merge to it
     if os.path.isfile(output_path):
         return output_path
 
-    # Fallback: find whatever video file was created
+    # Fallback: find whatever file was created with this video_id
     for f in os.listdir(output_dir):
-        if f.startswith("video.") and not f.endswith(".part"):
+        if f.startswith(f"{video_id}.") and not f.endswith(".part"):
             return os.path.join(output_dir, f)
 
     raise FileNotFoundError(f"Video file not found in {output_dir}")
@@ -74,9 +73,9 @@ def extract_audio(video_path: str, audio_path: str) -> str:
     return audio_path
 
 
-def save_metadata(info_dict: dict, output_dir: str) -> None:
-    """Save metadata.json and caption.txt from video info."""
-    metadata_path = os.path.join(output_dir, "metadata.json")
+def save_metadata(info_dict: dict, metadata_dir: str, captions_dir: str, video_id: str) -> None:
+    """Save {video_id}.json and {video_id}.txt from video info."""
+    metadata_path = os.path.join(metadata_dir, f"{video_id}.json")
     metadata = {
         "id": info_dict.get("id"),
         "title": info_dict.get("title"),
@@ -94,6 +93,6 @@ def save_metadata(info_dict: dict, output_dir: str) -> None:
         json.dump(metadata, f, indent=2, ensure_ascii=False)
 
     caption = info_dict.get("description") or info_dict.get("title") or ""
-    caption_path = os.path.join(output_dir, "caption.txt")
+    caption_path = os.path.join(captions_dir, f"{video_id}.txt")
     with open(caption_path, "w", encoding="utf-8") as f:
         f.write(caption)

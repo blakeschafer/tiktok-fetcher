@@ -54,15 +54,20 @@ def run_profile_pipeline(url: str, config: Config):
     yield PipelineEvent("info", f"Found {total} video(s). Starting downloads...", total=total)
 
     # Phase 2: Process each video
+    # Files are organized by type: videos/, audio/, metadata/, captions/, transcripts/
+    profile_dir = os.path.join(config.DOWNLOAD_DIR, "tiktok", profile_name)
+    videos_dir = os.path.join(profile_dir, "videos")
+    audio_dir = os.path.join(profile_dir, "audio")
+    metadata_dir = os.path.join(profile_dir, "metadata")
+    captions_dir = os.path.join(profile_dir, "captions")
+    transcripts_dir = os.path.join(profile_dir, "transcripts")
+    for d in (videos_dir, audio_dir, metadata_dir, captions_dir, transcripts_dir):
+        ensure_directory(d)
+
     success_count = 0
     for idx, info in enumerate(videos, start=1):
         video_id = str(info.get("id", f"unknown_{idx}"))
         title = info.get("title", "Untitled")[:80]
-
-        video_dir = os.path.join(
-            config.DOWNLOAD_DIR, "tiktok", profile_name, "videos", video_id
-        )
-        ensure_directory(video_dir)
 
         yield PipelineEvent(
             "progress",
@@ -76,14 +81,14 @@ def run_profile_pipeline(url: str, config: Config):
 
         # Download video
         try:
-            video_path = download_video(info, video_dir)
+            video_path = download_video(info, videos_dir, video_id)
         except Exception as e:
             logger.exception("Failed to download video %s", video_id)
             yield PipelineEvent("error", f"[{idx}/{total}] Download failed: {e}", current=idx, total=total, video_id=video_id)
             continue
 
         # Extract audio
-        audio_path = os.path.join(video_dir, "audio.mp3")
+        audio_path = os.path.join(audio_dir, f"{video_id}.mp3")
         try:
             extract_audio(video_path, audio_path)
         except Exception as e:
@@ -93,7 +98,7 @@ def run_profile_pipeline(url: str, config: Config):
 
         # Save metadata + caption
         try:
-            save_metadata(info, video_dir)
+            save_metadata(info, metadata_dir, captions_dir, video_id)
         except Exception as e:
             logger.exception("Failed to save metadata for %s", video_id)
             yield PipelineEvent("error", f"[{idx}/{total}] Metadata save failed: {e}", current=idx, total=total, video_id=video_id)
@@ -101,7 +106,7 @@ def run_profile_pipeline(url: str, config: Config):
 
         # Transcribe
         if config.ENABLE_TRANSCRIPTION and os.path.isfile(audio_path):
-            transcript_path = os.path.join(video_dir, "transcript.txt")
+            transcript_path = os.path.join(transcripts_dir, f"{video_id}.txt")
             try:
                 yield PipelineEvent(
                     "progress",

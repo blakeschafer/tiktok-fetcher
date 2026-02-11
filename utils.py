@@ -58,10 +58,21 @@ def ensure_directory(path: str) -> str:
 
 
 def list_downloads(base_dir: str) -> list[dict]:
-    """List all downloaded profiles and their videos."""
+    """List all downloaded profiles and their videos.
+
+    Scans the type-based folder structure:
+        tiktok/{profile}/videos/{id}.mp4
+        tiktok/{profile}/audio/{id}.mp3
+        tiktok/{profile}/metadata/{id}.json
+        tiktok/{profile}/captions/{id}.txt
+        tiktok/{profile}/transcripts/{id}.txt
+    """
     tiktok_dir = os.path.join(base_dir, "tiktok")
     if not os.path.isdir(tiktok_dir):
         return []
+
+    # Folders to scan and their label for display
+    type_folders = ["videos", "audio", "metadata", "captions", "transcripts"]
 
     profiles = []
     for profile_name in sorted(os.listdir(tiktok_dir)):
@@ -69,28 +80,27 @@ def list_downloads(base_dir: str) -> list[dict]:
         if not os.path.isdir(profile_path):
             continue
 
-        videos_dir = os.path.join(profile_path, "videos")
-        if not os.path.isdir(videos_dir):
-            continue
-
-        videos = []
-        for video_id in sorted(os.listdir(videos_dir)):
-            video_dir = os.path.join(videos_dir, video_id)
-            if not os.path.isdir(video_dir):
+        # Collect all video IDs and their files across type folders
+        video_files: dict[str, list[dict]] = {}
+        for folder in type_folders:
+            folder_path = os.path.join(profile_path, folder)
+            if not os.path.isdir(folder_path):
                 continue
+            for f in sorted(os.listdir(folder_path)):
+                filepath = os.path.join(folder_path, f)
+                if not os.path.isfile(filepath):
+                    continue
+                video_id = os.path.splitext(f)[0]
+                video_files.setdefault(video_id, []).append({
+                    "name": f"{folder}/{f}",
+                    "size": os.path.getsize(filepath),
+                    "path": os.path.join("tiktok", profile_name, folder, f),
+                })
 
-            files = []
-            for f in sorted(os.listdir(video_dir)):
-                filepath = os.path.join(video_dir, f)
-                if os.path.isfile(filepath):
-                    files.append({
-                        "name": f,
-                        "size": os.path.getsize(filepath),
-                        "path": os.path.join("tiktok", profile_name, "videos", video_id, f),
-                    })
-
-            if files:
-                videos.append({"id": video_id, "files": files})
+        videos = [
+            {"id": vid, "files": files}
+            for vid, files in sorted(video_files.items())
+        ]
 
         if videos:
             profiles.append({"name": profile_name, "videos": videos})
